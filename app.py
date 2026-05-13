@@ -6,6 +6,7 @@ from pathlib import Path
 from openai import OpenAI
 from datetime import datetime
 
+Path("data").mkdir(parents=True, exist_ok=True)
 
 st.set_page_config(
     page_title="個人財務 Dashboard",
@@ -750,6 +751,7 @@ else:
             ai_result = json.loads(raw_text)
 
             report_path = Path("data/ai_reports.csv")
+            report_path.parent.mkdir(parents=True, exist_ok=True)
 
             report_row = {
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
