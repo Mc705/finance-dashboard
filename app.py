@@ -876,11 +876,53 @@ else:
 
 st.subheader("📚 GPT 財務報告歷史")
 
-ai_report_path = Path("data/ai_reports.csv")
+ai_reports_df = None
+report_source = "無資料"
 
-if ai_report_path.exists():
-    ai_reports_df = pd.read_csv(ai_report_path)
+webhook_url = st.secrets.get("AI_REPORT_WEBHOOK_URL", "")
+webhook_secret = st.secrets.get("AI_REPORT_WEBHOOK_SECRET", "")
 
+if webhook_url and webhook_secret:
+    try:
+        response = requests.get(
+            webhook_url,
+            params={"secret": webhook_secret},
+            timeout=15
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+
+            if result.get("ok"):
+                reports = result.get("reports", [])
+                ai_reports_df = pd.DataFrame(reports)
+                report_source = "Google Sheets"
+            else:
+                st.warning(f"讀取 Google Sheets AI 報告失敗：{result.get('error')}")
+        else:
+            st.warning(f"讀取 Google Sheets AI 報告失敗，HTTP 狀態碼：{response.status_code}")
+
+    except Exception as e:
+        st.warning(f"讀取 Google Sheets AI 報告失敗：{e}")
+
+
+if ai_reports_df is None:
+    ai_report_path = Path("data/ai_reports.csv")
+
+    if ai_report_path.exists():
+        ai_reports_df = pd.read_csv(ai_report_path)
+        report_source = "本機 / 雲端暫存 CSV"
+    else:
+        ai_reports_df = pd.DataFrame()
+        report_source = "無資料"
+
+
+st.caption(f"AI 報告資料來源：{report_source}")
+
+if ai_reports_df.empty:
+    st.info("目前還沒有 GPT 財務報告紀錄。")
+
+else:
     summary_columns = [
         "created_at",
         "overall_rating",
@@ -901,30 +943,43 @@ if ai_report_path.exists():
     display_reports_df = ai_reports_df[existing_columns].copy()
 
     if "net_worth" in display_reports_df.columns:
-        display_reports_df["net_worth"] = display_reports_df["net_worth"].map(
-            lambda x: f"NT${x:,.0f}"
-        )
+        display_reports_df["net_worth"] = pd.to_numeric(
+            display_reports_df["net_worth"],
+            errors="coerce"
+        ).map(lambda x: f"NT${x:,.0f}" if pd.notna(x) else "")
 
     if "cash_ratio" in display_reports_df.columns:
-        display_reports_df["cash_ratio"] = display_reports_df["cash_ratio"].map(
-            lambda x: f"{x:.2f}%"
-        )
+        display_reports_df["cash_ratio"] = pd.to_numeric(
+            display_reports_df["cash_ratio"],
+            errors="coerce"
+        ).map(lambda x: f"{x:.2f}%" if pd.notna(x) else "")
 
     if "debt_ratio" in display_reports_df.columns:
-        display_reports_df["debt_ratio"] = display_reports_df["debt_ratio"].map(
-            lambda x: f"{x:.2f}%"
-        )
+        display_reports_df["debt_ratio"] = pd.to_numeric(
+            display_reports_df["debt_ratio"],
+            errors="coerce"
+        ).map(lambda x: f"{x:.2f}%" if pd.notna(x) else "")
 
     if "fire_progress" in display_reports_df.columns:
-        display_reports_df["fire_progress"] = display_reports_df["fire_progress"].map(
-            lambda x: f"{x:.2f}%"
-        )
+        display_reports_df["fire_progress"] = pd.to_numeric(
+            display_reports_df["fire_progress"],
+            errors="coerce"
+        ).map(lambda x: f"{x:.2f}%" if pd.notna(x) else "")
 
     st.dataframe(display_reports_df, use_container_width=True)
 
-    if st.button("清空 GPT 財務報告歷史"):
-        ai_report_path.unlink()
-        st.success("GPT 財務報告歷史已清空，請重新整理頁面。")
+    csv_download = ai_reports_df.to_csv(index=False, encoding="utf-8-sig")
 
-else:
-    st.info("目前還沒有 GPT 財務報告紀錄。")
+    st.download_button(
+        label="下載 GPT 財務報告 CSV",
+        data=csv_download,
+        file_name="ai_reports.csv",
+        mime="text/csv"
+    )
+
+    if report_source == "本機 / 雲端暫存 CSV":
+        if st.button("清空 GPT 財務報告歷史"):
+            ai_report_path.unlink()
+            st.success("GPT 財務報告歷史已清空，請重新整理頁面。")
+    elif report_source == "Google Sheets":
+        st.info("目前報告歷史來自 Google Sheets。如需刪除紀錄，請到 Google Sheets 的「AI報告歷史」分頁刪除。")
