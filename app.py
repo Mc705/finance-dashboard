@@ -444,7 +444,12 @@ else:
     for col in ["保守 3%", "中性 5%", "積極 8%"]:
         display_projection_df[col] = display_projection_df[col].map(lambda x: f"NT${x:,.0f}")
 
-    st.dataframe(display_projection_df, use_container_width=True)
+    st.dataframe(
+        display_projection_df,
+        use_container_width=True,
+        height=320,
+        hide_index=True
+    )
 
 st.subheader("⏳ FIRE 達成年限預估")
 
@@ -514,6 +519,7 @@ else:
     history_source = "無資料"
 
 st.sidebar.caption(f"淨值歷史資料來源：{history_source}")
+st.sidebar.caption("建議使用桌機或平板查看完整圖表；手機版可查看核心指標與 GPT 報告。")
 
 if history_df is None:
     st.warning("找不到淨值歷史資料。請設定 NET_WORTH_HISTORY_CSV_URL 或放入 data/net_worth_history.csv。")
@@ -574,7 +580,11 @@ else:
                 )
 
                 st.plotly_chart(fig_history, use_container_width=True)
-                st.dataframe(history_df, use_container_width=True)
+                st.dataframe(
+                    history_df,
+                    use_container_width=True,
+                    height=220
+                )
 
 st.subheader("🤖 GPT 財務顧問")
 
@@ -982,6 +992,12 @@ else:
             display_reports_df["fire_progress"],
             errors="coerce"
         ).map(lambda x: f"{x:.2f}%" if pd.notna(x) else "")
+    if "one_sentence_summary" in display_reports_df.columns:
+        display_reports_df["one_sentence_summary"] = (
+            display_reports_df["one_sentence_summary"]
+            .astype(str)
+            .map(lambda x: x[:50] + "..." if len(x) > 50 else x)
+        )
 
     # 重新命名欄位，讓畫面更像正式產品
     display_reports_df = display_reports_df.rename(columns={
@@ -1000,6 +1016,7 @@ else:
         display_reports_df,
         use_container_width=True,
         hide_index=True,
+        height=260,
         column_config={
             "建立時間": st.column_config.TextColumn("建立時間", width="medium"),
             "AI 評級": st.column_config.TextColumn("AI 評級", width="small"),
