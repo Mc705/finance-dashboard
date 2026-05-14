@@ -472,7 +472,11 @@ for scenario_name in ["保守 3%", "中性 5%", "積極 8%"]:
 
 fire_year_df = pd.DataFrame(fire_year_results)
 
-st.dataframe(fire_year_df, use_container_width=True)
+st.dataframe(
+    fire_year_df,
+    use_container_width=True,
+    hide_index=True
+)
 
 st.subheader("🧩 資產配置")
 
@@ -491,9 +495,19 @@ if not allocation_df.empty:
         display_df["比例"] = display_df["金額"] / total * 100
         display_df = display_df[["資產類型", "比例"]]
         display_df["比例"] = display_df["比例"].map(lambda x: f"{x:.2f}%")
-        st.dataframe(display_df, use_container_width=True)
+        st.dataframe(
+        display_df,
+            use_container_width=True,
+            hide_index=True,
+            height=220
+        )
     else:
-        st.dataframe(allocation_df, use_container_width=True)
+        st.dataframe(
+            allocation_df,
+            use_container_width=True,
+            hide_index=True,
+            height=220
+        )
 else:
     st.warning("找不到資產配置資料，請確認 Dashboard 的 D:E 欄有資料。")
 
@@ -583,6 +597,7 @@ else:
                 st.dataframe(
                     history_df,
                     use_container_width=True,
+                    hide_index=True,
                     height=220
                 )
 
@@ -1016,7 +1031,7 @@ else:
         display_reports_df,
         use_container_width=True,
         hide_index=True,
-        height=260,
+        height=240,
         column_config={
             "建立時間": st.column_config.TextColumn("建立時間", width="medium"),
             "AI 評級": st.column_config.TextColumn("AI 評級", width="small"),
