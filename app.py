@@ -475,7 +475,8 @@ fire_year_df = pd.DataFrame(fire_year_results)
 st.dataframe(
     fire_year_df,
     use_container_width=True,
-    hide_index=True
+    hide_index=True,
+    height=180
 )
 
 st.subheader("🧩 資產配置")
