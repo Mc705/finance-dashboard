@@ -917,11 +917,23 @@ if ai_reports_df is None:
 
 
 st.caption(f"AI 報告資料來源：{report_source}")
+if ai_reports_df is not None and not ai_reports_df.empty:
+    st.caption(f"目前共有 {len(ai_reports_df)} 筆 GPT 財務報告。")
 
 if ai_reports_df.empty:
     st.info("目前還沒有 GPT 財務報告紀錄。")
 
 else:
+    if "created_at" in ai_reports_df.columns:
+        ai_reports_df["_created_at_sort"] = pd.to_datetime(
+            ai_reports_df["created_at"],
+            errors="coerce"
+        )
+
+        ai_reports_df = ai_reports_df.sort_values(
+            "_created_at_sort",
+            ascending=False
+        ).drop(columns=["_created_at_sort"])
     summary_columns = [
         "created_at",
         "overall_rating",
@@ -971,7 +983,35 @@ else:
             errors="coerce"
         ).map(lambda x: f"{x:.2f}%" if pd.notna(x) else "")
 
-    st.dataframe(display_reports_df, use_container_width=True)
+    # 重新命名欄位，讓畫面更像正式產品
+    display_reports_df = display_reports_df.rename(columns={
+        "created_at": "建立時間",
+        "overall_rating": "AI 評級",
+        "financial_score": "財務分數",
+        "rule_grade": "規則評級",
+        "net_worth": "淨值",
+        "cash_ratio": "現金比例",
+        "debt_ratio": "負債比",
+        "fire_progress": "FIRE 進度",
+        "one_sentence_summary": "一句總結",
+    })
+
+    st.dataframe(
+        display_reports_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "建立時間": st.column_config.TextColumn("建立時間", width="medium"),
+            "AI 評級": st.column_config.TextColumn("AI 評級", width="small"),
+            "財務分數": st.column_config.NumberColumn("財務分數", width="small"),
+            "規則評級": st.column_config.TextColumn("規則評級", width="small"),
+            "淨值": st.column_config.TextColumn("淨值", width="medium"),
+            "現金比例": st.column_config.TextColumn("現金比例", width="small"),
+            "負債比": st.column_config.TextColumn("負債比", width="small"),
+            "FIRE 進度": st.column_config.TextColumn("FIRE 進度", width="small"),
+            "一句總結": st.column_config.TextColumn("一句總結", width="large"),
+        }
+    )
 
     csv_download = ai_reports_df.to_csv(index=False, encoding="utf-8-sig")
 
