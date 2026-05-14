@@ -1,4 +1,5 @@
 import json
+import requests
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -778,6 +779,47 @@ else:
                 report_df = pd.concat([old_reports, report_df], ignore_index=True)
 
             report_df.to_csv(report_path, index=False, encoding="utf-8-sig")
+
+            webhook_url = st.secrets.get("AI_REPORT_WEBHOOK_URL", "")
+            webhook_secret = st.secrets.get("AI_REPORT_WEBHOOK_SECRET", "")
+
+            if webhook_url and webhook_secret:
+                payload = report_row.copy()
+                payload["secret"] = webhook_secret
+
+                try:
+                    webhook_response = requests.post(
+                        webhook_url,
+                        json=payload,
+                        timeout=15
+                    )
+
+                    if webhook_response.status_code == 200:
+                        try:
+                            webhook_result = webhook_response.json()
+
+                            if webhook_result.get("ok"):
+                                st.info("本次 GPT 財務報告也已寫入 Google Sheets。")
+                            else:
+                                st.warning(
+                                    f"Google Sheets 寫入失敗：{webhook_result.get('error')}"
+                                )
+
+                        except Exception:
+                            st.warning(
+                                "Google Sheets 有回應，但不是有效 JSON。請確認 Apps Script Web App 部署設定。"
+                            )
+
+                    else:
+                        st.warning(
+                            f"Google Sheets 寫入失敗，HTTP 狀態碼：{webhook_response.status_code}"
+                        )
+
+                except Exception as webhook_error:
+                    st.warning(f"Google Sheets 寫入失敗：{webhook_error}")
+
+            else:
+                st.info("尚未設定 AI_REPORT_WEBHOOK_URL / AI_REPORT_WEBHOOK_SECRET，僅儲存到本機 CSV。")
 
             st.success("GPT 結構化財務分析完成")
             st.info("本次 GPT 財務報告已儲存到 data/ai_reports.csv")
