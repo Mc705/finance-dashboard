@@ -942,6 +942,12 @@ else:
 
     display_reports_df = ai_reports_df[existing_columns].copy()
 
+    if "created_at" in display_reports_df.columns:
+        display_reports_df["created_at"] = pd.to_datetime(
+            display_reports_df["created_at"],
+            errors="coerce"
+        ).dt.strftime("%Y-%m-%d %H:%M:%S")
+
     if "net_worth" in display_reports_df.columns:
         display_reports_df["net_worth"] = pd.to_numeric(
             display_reports_df["net_worth"],
