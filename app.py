@@ -822,7 +822,6 @@ else:
                 st.info("尚未設定 AI_REPORT_WEBHOOK_URL / AI_REPORT_WEBHOOK_SECRET，僅儲存到本機 CSV。")
 
             st.success("GPT 結構化財務分析完成")
-            st.info("本次 GPT 財務報告已儲存到 data/ai_reports.csv")
 
             st.metric("AI 財務評級", ai_result["overall_rating"])
             st.write(f"### {ai_result['summary']}")
